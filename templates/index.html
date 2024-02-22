@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image-to-Text Converter</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+  <style>
+    /* Dark theme CSS */
+    body {
+      background-color: #121212;
+      color: #e6e6e6;
+    }
+    .light-mode {
+      display: none;
+    }
+    .drop-area {
+      border: 2px dashed #e6e6e6;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 800px;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .drop-area.dragover {
+      background-color: #2b2b2b;
+      border-color: #fff;
+    }
+    .drop-area.dragover .drop-message {
+      color: #fff;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+  <div class="w-full max-w-md">
+    <h1 class="text-4xl font-bold mb-6">Convert Images to Text</h1>
+    <p class="mb-6">Easily extract text from your images with our advanced OCR technology.</p>
+    <div id="image-container" class="mb-6"></div>
+    <div id="text-container" class="mb-6"></div>
+  </div>
+  <div class="light-mode flex justify-center items-center space-x-4">
+    <button id="light-mode-toggle" class="bg-white hover:bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg">Light Mode</button>
+  </div>
+  <div class="drop-area" id="image-upload-area">
+    <p class="drop-message">Drag and drop an image here, or click to browse.</p>
+  </div>
+  <script>
+    const imageUploadArea = document.getElementById('image-upload-area');
+    const imageContainer = document.getElementById('image-container');
+    const textContainer = document.getElementById('text-container');
+  
+    // Function to upload image and process it
+    function uploadImage(imageFile) {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+  
+      // Call the Flask backend using fetch API
+      fetch('/process-image', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Display the image in the imageContainer
+        const imageElement = document.createElement('img');
+        imageElement.src = URL.createObjectURL(imageFile);
+        imageElement.alt = 'Uploaded Image';
+        imageElement.classList.add('rounded-lg', 'shadow-lg', 'w-full', 'max-w-md');
+        imageContainer.innerHTML = '';
+        imageContainer.appendChild(imageElement);
+  
+        // Display the caption in the textContainer
+        textContainer.innerHTML = `<p class="text-white">${data.caption}</p>`;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    }
+  
+    // Event listener for drag and drop or image upload
+    imageUploadArea.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      imageUploadArea.classList.add('dragover');
+    });
+    imageUploadArea.addEventListener('dragleave', () => {
+      imageUploadArea.classList.remove('dragover');
+    });
+    imageUploadArea.addEventListener('drop', (event) => {
+      event.preventDefault();
+      imageUploadArea.classList.remove('dragover');
+      const imageFile = event.dataTransfer.files[0];
+      uploadImage(imageFile);
+    });
+  
+    // Event listener for input element
+    const inputElement = document.createElement('input');
+    inputElement.type = 'file';
+    inputElement.id = 'image-upload';
+    inputElement.accept = 'image/*';
+    inputElement.addEventListener('change', (event) => {
+      const imageFile = event.target.files[0];
+      uploadImage(imageFile);
+    });
+    imageUploadArea.appendChild(inputElement);
+  
+    // Event listener for click event on the drop area
+    imageUploadArea.addEventListener('click', () => {
+      inputElement.click();
+    });
+  
+    // Light mode toggle button event listener
+    const lightModeToggle = document.getElementById('light-mode-toggle');
+    lightModeToggle.addEventListener('click', () => {
+      const body = document.body;
+      const darkThemeClass = 'dark-theme';
+      const lightModeClass = 'light-mode';
+      if (body.classList.contains(darkThemeClass)) {
+        body.classList.remove(darkThemeClass);
+        body.classList.add(lightModeClass);
+        lightModeToggle.textContent = 'Dark Mode';
+      } else {
+        body.classList.remove(lightModeClass);
+        body.classList.add(darkThemeClass);
+        lightModeToggle.textContent = 'Light Mode';
+      }
+    });
+  </script>
+  
+
+  
+
+</body>
+</html>
