@@ -15,4 +15,4 @@ EXPOSE 5000
 
 
 # Run the app using gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
+CMD ["python", "app.py"]
