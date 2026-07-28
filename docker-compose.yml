@@ -1,0 +1,27 @@
+services:
+  img2txt:
+    build:
+      context: .
+      args:
+        # Changing this rebuilds the baked-in weights AND is passed through as
+        # the runtime MODEL_ID, so the two can never drift apart.
+        MODEL_ID: Salesforce/blip-image-captioning-large
+    image: img2txt:latest
+    ports:
+      - "5000:5000"
+    environment:
+      WEB_CONCURRENCY: 1      # each extra worker costs ~1.9GB RAM
+      GUNICORN_THREADS: 4
+      GUNICORN_TIMEOUT: 120
+      OMP_NUM_THREADS: 4      # keep torch from oversubscribing CPU in a cgroup
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/app:uid=10001,gid=10001   # gunicorn's control server writes ~/.gunicorn
+    security_opt:
+      - no-new-privileges:true

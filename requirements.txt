@@ -1,4 +1,7 @@
-flask
-pillow
-transformers
-gunicorn
+# Bounded ranges keep builds reproducible-ish without pinning to versions
+# that may not exist yet. Run `pip freeze > requirements.lock` for exact pins.
+flask>=3,<4
+pillow>=11,<13
+transformers>=4.44,<6
+torch>=2.4,<3
+gunicorn>=22,<27

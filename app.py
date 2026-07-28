@@ -1,13 +1,20 @@
 from flask import Flask, render_template, request, jsonify
 from PIL import Image
-import requests
+import os
+import torch
 from io import BytesIO
 from transformers import BlipProcessor, BlipForConditionalGeneration
 
 app = Flask(__name__)
 
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
-model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
+# In the container this points at /opt/model, the checkpoint baked in at build
+# time -- HF_HUB_OFFLINE=1 there, so nothing is downloadable at runtime.
+MODEL_ID = os.environ.get("MODEL_ID", "Salesforce/blip-image-captioning-large")
+
+processor = BlipProcessor.from_pretrained(MODEL_ID)
+# .float() upcasts the float16 on-disk checkpoint: half the image size, but
+# float32 math, since CPUs have no usable float16 kernels. No-op on an fp32 one.
+model = BlipForConditionalGeneration.from_pretrained(MODEL_ID).float().eval()
 
 max_new_tokens = 100
 
@@ -24,7 +31,8 @@ def process_image():
 
         # unconditional image captioning
         inputs = processor(raw_image, return_tensors="pt")
-        out = model.generate(**inputs, max_new_tokens=max_new_tokens)
+        with torch.inference_mode():
+            out = model.generate(**inputs, max_new_tokens=max_new_tokens)
         caption = processor.decode(out[0], skip_special_tokens=True)
 
         return jsonify({'caption': caption})
